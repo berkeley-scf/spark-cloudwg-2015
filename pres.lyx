@@ -1,0 +1,539 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass beamer
+\begin_preamble
+\makeatother\input{/accounts/gen/vis/paciorek/latex/paciorekMacros}
+
+\usepackage{listings}
+
+\usetheme{Warsaw}
+% or ...
+%\usetheme{Antibes}	% tree outline, neat
+%\usetheme{JuanLesPins}	% like Antibes, with shading
+%\usetheme{Bergen}	% outline on side
+%\usetheme{Luebeck}	% like Warsaw, square sides
+%\usetheme{Berkeley}	% interesting left bar outline
+%\usetheme{Madrid}	% clean, nice.  7/12 page numbers
+%\usetheme{Berlin}	% dots show slide number
+%\usetheme{Malmoe}	% OK, plain, unshaded
+%\usetheme{Boadilla}	% nice, white bg, no top bar
+%\usetheme{Marburg}	% nice, outline on right
+%\usetheme{boxes}	% ???
+%\usetheme{Montpellier}	% tree outline on top, plainish white
+%\usetheme{Copenhagen}	% like Warsaw
+%\usetheme{PaloAlto}	% looks good
+%\usetheme{Darmstadt}	% like Warsaw with circle outline
+%\usetheme{Pittsburgh}
+%\usetheme{default}
+%\usetheme{Rochester}	% like boxy, unshaded warsaw
+%\usetheme{Dresden}	% circle outline on top
+%\usetheme{Singapore}	% purple gradient top
+%\usetheme{Frankfurt}	% like Warsaw with circle outline on top
+%\usetheme{Szeged}
+%\usetheme{Goettingen}	% light purple right bar outline
+%\usetheme{Warsaw}
+%\usetheme{Hannover}	% like Goett with bar on left
+%\usetheme{compatibility}
+%\usetheme{Ilmenau}
+
+\setbeamercovered{transparent}
+% or whatever (possibly just delete it)
+
+%\usecolortheme{seahorse}
+%\usecolortheme{rose}
+
+% seems to fix typewriter font in outline header:
+\usepackage{ae}
+\usepackage{aecompl}
+
+
+\makeatother
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children false
+\language american
+\language_package default
+\inputencoding latin9
+\fontencoding global
+\font_roman ae
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Spark on AWS and Savio 
+\end_layout
+
+\begin_layout Author
+\begin_inset Argument
+status open
+
+\begin_layout Plain Layout
+Chris Paciorek 
+\end_layout
+
+\end_inset
+
+Chris Paciorek
+\begin_inset Newline newline
+\end_inset
+
+
+\size scriptsize
+Berkeley Research Computing and Statistical Computing Facility 
+\begin_inset Newline newline
+\end_inset
+
+University of California, Berkeley
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Example dataset
+\end_layout
+
+\begin_layout Itemize
+not-so-big dataset on US airline on-time statistics, 1987-2008: 
+\begin_inset CommandInset href
+LatexCommand href
+target "http://stat-computing.org/dataexpo/2009/the-data.html"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+each observation (row) is a single domestic flight
+\end_layout
+
+\begin_layout Itemize
+~10 Gb uncompressed in text format
+\end_layout
+
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+MapReduce paradigm
+\end_layout
+
+\begin_layout Itemize
+Basic idea is to store the data in a distributed fashion across multiple
+ nodes
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Do the computation in pieces on the data on each node.
+ 
+\end_layout
+
+\begin_layout Itemize
+Results can also be stored in a distributed fashion.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Key benefits:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Process datasets that can't fit on disk on one machine
+\end_layout
+
+\begin_layout Itemize
+Also, processing of the dataset can happen in parallel
+\end_layout
+
+\end_deeper
+\begin_layout BeginFrame
+MapReduce structure
+\end_layout
+
+\begin_layout Itemize
+The basic steps of MapReduce are as follows:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+read individual data objects (e.g., records/lines from CSVs or individual
+ data files)
+\end_layout
+
+\begin_layout Itemize
+map: create key-value pairs using the inputs (more formally, the map step
+ takes a key-value pair and returns a new key-value pair)
+\end_layout
+
+\begin_layout Itemize
+reduce - for each key, do an operation on the associated values and create
+ a result - i.e., aggregate within the values assigned to each key
+\end_layout
+
+\begin_layout Itemize
+write out the {key,result} pair
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Idea is that data are naturally grouped by key (aka category, strata, etc.).
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+But you can do a reduce applied to the entire dataset
+\end_layout
+
+\end_deeper
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Hadoop
+\end_layout
+
+\begin_layout Itemize
+
+\lang english
+Hadoop is an infrastructure for enabling MapReduce across a network of machines.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\lang english
+Hides the complexity of distributing the calculations and collecting results.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\emph on
+\lang english
+Distributed data
+\emph default
+: Includes a file system for distributed storage (HDFS), where each piece
+ of information is stored redundantly (on multiple machines).
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+\lang english
+Parallel calculation
+\emph default
+: Calculations can then be done in a parallel fashion, often on data in
+ place on each machine
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\lang english
+This limits communication that has to be done over the network.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\emph on
+\lang english
+Fault tolerance
+\emph default
+: Hadoop also monitors completion of tasks and if a node fails, it will
+ redo the relevant tasks on another node.
+ 
+\end_layout
+
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Spark
+\end_layout
+
+\begin_layout Itemize
+Similar to Hadoop MapReduce, but faster and more flexible (
+\begin_inset Quotes eld
+\end_inset
+
+in-memory Hadoop
+\begin_inset Quotes erd
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+Critical backbone is HDFS 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Primary Spark datastructure is an RDD: resilient distributed dataset
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Multiple processes across multiple nodes operate on partitions of dataset
+ in parallel
+\end_layout
+
+\begin_layout Itemize
+Standard input format is a collection of delimited (e.g., CSV) text files,
+ possibly compressed
+\end_layout
+
+\begin_layout Itemize
+Programming model uses Map and Reduce steps (as in Hadoop) plus other methods
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Map: apply an operation to each observation in the dataset
+\end_layout
+
+\begin_layout Itemize
+Reduce: aggregate results across all observations falling into a given category
+ (aka 'key')
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Spark has Python, Scala, Java, and R interfaces
+\end_layout
+
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Cautions about Spark/Hadoop/MapReduce
+\end_layout
+
+\begin_layout Itemize
+For datasets that fit on disk, or particularly in memory, on one machine,
+ computation likely to be faster on that one machine without Spark/Hadoop/MapRed
+uce
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Easy to get machines with 128, 256 Gb, etc.
+ of RAM
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Error messages can be difficult to parse
+\end_layout
+
+\begin_layout Itemize
+Computations have to fit within the MapReduce paradigm
+\end_layout
+
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Key elements of Spark API
+\end_layout
+
+\begin_layout Itemize
+
+\lang english
+The 
+\begin_inset CommandInset href
+LatexCommand href
+name "Spark programming guide"
+target "http://spark.apache.org/docs/latest/programming-guide.html"
+
+\end_inset
+
+ discusses these API functions and a number of others.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\emph on
+\lang english
+map()
+\emph default
+: take an RDD and apply a function to each element, returning an RDD
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+\lang english
+reduce()
+\emph default
+ and 
+\emph on
+reduceByKey()
+\emph default
+: take an RDD and apply a reduction operation to the elements, doing the
+ reduction stratified by the key values for 
+\emph on
+reduceByKey()
+\emph default
+.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\lang english
+Reduction functions need to be associative and commutative and take 2 arguments
+ and return 1, all so that they can be done in parallel in a straightforward
+ way.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+
+\emph on
+\lang english
+filter()
+\emph default
+: create a subset
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+\lang english
+collect()
+\emph default
+: collect results back to the master
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+\lang english
+cache()
+\emph default
+: tell Spark to keep the RDD in memory for later use
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+\lang english
+repartition()
+\emph default
+: rework the RDD so it is in the specified number of chunks
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\lang english
+Consider how many chunks do you think we want the RDD split into.
+ What might the tradeoffs be?
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout EndFrame
+
+\end_layout
+
+\begin_layout BeginFrame
+Spark on Savio
+\end_layout
+
+\begin_layout Itemize
+Already installed
+\end_layout
+
+\begin_layout Itemize
+See demo code for making Spark accessible to your session
+\end_layout
+
+\begin_layout Itemize
+No HDFS - read/write from scratch
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Spark not designed for shared filesystem, so doesn't take advantage of some
+ aspects of Savio scratch disk
+\end_layout
+
+\end_deeper
+\begin_layout EndFrame
+
+\end_layout
+
+\end_body
+\end_document
